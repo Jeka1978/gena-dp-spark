@@ -5,6 +5,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,18 +15,24 @@ import java.util.Map;
 @Service
 @EnableScheduling
 public class MailSender {
+
+    private Map<Integer,MailGenerator> map = new HashMap<>();
+
     @Autowired
-    private Map<String,MailGenerator> map;
+    public void initMap(List<MailGenerator> list){
+        for (MailGenerator mailGenerator : list) {
+            map.put(mailGenerator.mailCode(), mailGenerator);
+        }
+    }
 
     @Scheduled(cron = "1/1 * * * * ?")
     public void sendMail() {
         MailInfo mailInfo = DButils.getMailInfo();
-        String code = String.valueOf(mailInfo.getCode());
+        int code = mailInfo.getCode();
         MailGenerator mailGenerator = map.get(code);
         if (mailGenerator == null) {
             throw new RuntimeException(code + " not supported");
         }
-
         String html = mailGenerator.generateHtml();
         send(html,mailInfo.getTo());
     }
